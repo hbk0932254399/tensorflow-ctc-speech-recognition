@@ -13,8 +13,11 @@ FIRST_INDEX = ord('a') - 1  # 0 is reserved to space
 def convert_inputs_to_ctc_format(audio, fs, target_text, num_features):
     # print(target_text)
     inputs = mfcc(audio, samplerate=fs, numcep=num_features)
+    intputs1 = dalta(inputs,2)
+    intputs2 = dalta(inputs1,2)
+    mfccs = np.concatenate((inputs, inputs1, inputs2), axis=1)
     # Transform in 3D array
-    train_inputs = np.asarray(inputs[np.newaxis, :])
+    train_inputs = np.asarray(mfccs[np.newaxis, :])
     train_inputs = (train_inputs - np.mean(train_inputs)) / np.std(train_inputs)
     train_seq_len = [train_inputs.shape[1]]
 

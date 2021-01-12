@@ -1,31 +1,38 @@
+import os
+os.environ['KMP_WARNINGS']='off'
+os.environ['TF_CPP_MIN_LOG_LEVEL']='3'
+
 import operator
 import random
 import time
 
 import numpy as np
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 from audio_reader import AudioReader
 from file_logger import FileLogger
 from utils import FIRST_INDEX, sparse_tuple_from
 from utils import convert_inputs_to_ctc_format
+from fast_ctc_decode import beam_search, viterbi_search
+from scipy.special import softmax
 
-sample_rate = 8000
+sample_rate = 16000
 # Some configs
-num_features = 13  # log filter bank or MFCC features
+num_features = 78  # log filter bank or MFCC features
 # Accounting the 0th index +  space + blank label = 28 characters
 num_classes = ord('z') - ord('a') + 1 + 1 + 1
 
 # Hyper-parameters
 num_epochs = 100000
-num_hidden = 256
+num_hidden = 1024
 batch_size = 16
 
 num_examples = 1
 num_batches_per_epoch = 10
 
 # make sure the values match the ones in generate_audio_cache.py
-audio = AudioReader(audio_dir=None,
+audio = AudioReader(audio_dir='train',
                     cache_dir='cache',
                     sample_rate=sample_rate)
 
@@ -165,11 +172,19 @@ def run_ctc():
     with tf.Session(graph=graph) as session:
 
         tf.global_variables_initializer().run()
+        
+        saver=tf.train.Saver(max_to_keep=None)
+        if not os.apth.exists(modelpath):
+          os.mkdir(modlpath)
 
         for curr_epoch in range(num_epochs):
             train_cost = train_ler = 0
             start = time.time()
-
+            
+          if ((curr_epoch+1)%1==0):
+          save_path =saver.save(session,modelpath + '/' + modelname, global_step=curr_epoch+1)
+            print('save model to ',save_path)
+            
             for batch in range(num_batches_per_epoch):
                 train_inputs, train_targets, train_seq_len, original = next_batch(train=True)
                 feed = {inputs: train_inputs,
